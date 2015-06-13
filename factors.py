@@ -5,18 +5,25 @@ class Factor():
         self.vars = tuple(vars)
         self.probabilities = tuple(probabilities)
 
+
     def __str__(self):
         """ A vertical list of the whole factor. """
+        # Left column may have up to 1 ~ added for each var
         leftWidth = len(self.vars) + sum(len(v) for v in self.vars)
+        # This is max length for {:3g}
         rightWidth = 8
         lines = []
+
         for vals, prob in self.probabilities:
             varString = ''
+            # Mark false with a tilde
             for idx, v in enumerate(self.vars):
                 varString += v if vals[idx] else '~' + v
+            # Three decimals
             probStr = '{:3g}'.format(prob).ljust(rightWidth)
             lines.append('{} {}'.format(varString.ljust(leftWidth), probStr))
         return '\n'.join(lines)
+
 
     def __mul__(self, other):
         """ Multiply two factors. """
@@ -36,31 +43,39 @@ class Factor():
             # Keep only entries with the correct value for the variable
             if vals[index] != value: continue
             # Remove the value at the index of our variable to restrict
-            newVals = tuple(v for i, v in enumerate(self.vars) if i != index)
+            newVals = (vals[i] for i, v in enumerate(self.vars) if i != index)
+            newVals = tuple(newVals)
             newProbs.append((newVals, prob))
 
         # Immutability 4eva
         return Factor(newVars, newProbs)
 
+
     def sumout(self, variable):
         """ Sum out a given variable. """
         pass
+
 
     def normalize(self):
         """ Normalize probabilities. """
         pass
 
+
 def multiply(f1, f2):
     return f1 * f2
+
 
 def restrict(factor, var, val):
     return factor.restrict(var, val)
 
+
 def sumout(factor, var):
     return factor.sumout(var)
 
+
 def normalize(factor):
     return factor.normalize()
+
 
 def inference(factorList, queryVars, hiddenVars, evidence):
     """ Compute P(queryVars | evidence) by variable elimination.  This first
@@ -69,12 +84,14 @@ def inference(factorList, queryVars, hiddenVars, evidence):
     Finally, the result is normalized to return a probability over a
     distribution that sums to 1.
     """
+    pass
+
 
 a = Factor(['a', 'b'],
            [((True, False), 0.1),
             ((True, True), 0.9),
-            ((False, False), 0.5),
-            ((False, True), 0.5)])
+            ((False, False), 0.4),
+            ((False, True), 0.6)])
 
 print(a)
 print(a.restrict('a', True))
