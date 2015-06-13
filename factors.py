@@ -5,13 +5,21 @@ class Factor():
         self.vars = tuple(vars)
         self.probabilities = tuple(probabilities)
 
+    def __str__(self):
+        """ A vertical list of the whole factor. """
+        leftWidth = len(self.vars) + sum(len(v) for v in self.vars)
+        rightWidth = 8
+        lines = []
+        for vals, prob in self.probabilities:
+            varString = ''
+            for idx, v in enumerate(self.vars):
+                varString += v if vals[idx] else '~' + v
+            probStr = '{:3g}'.format(prob).ljust(rightWidth)
+            lines.append('{} {}'.format(varString.ljust(leftWidth), probStr))
+        return '\n'.join(lines)
+
     def __mul__(self, other):
         """ Multiply two factors. """
-        pass
-
-    def __str__(self):
-        """ Return the table. """
-        maxVar = max(len(v) for v in self.vars)
         pass
 
 
@@ -67,3 +75,4 @@ a = Factor(['a', 'b'],
             ((True, True), 0.9),
             ((False, False), 0.5),
             ((False, True), 0.5)])
+print(a)
