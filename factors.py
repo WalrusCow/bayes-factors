@@ -73,7 +73,7 @@ class Factor():
     def restrict(self, variable, value):
         """ Restrict a variable to a given value. """
         if variable not in self.vars:
-            raise ValueError('Given variable {} not in factor'.format(variable))
+            raise KeyError('Given variable {} not in factor'.format(variable))
 
         index = self.vars.index(variable)
         newVars = tuple(v for v in self.vars if v != variable)
@@ -94,7 +94,7 @@ class Factor():
     def sumout(self, var):
         """ Sum out a given variable. """
         if var not in self.vars:
-            raise ValueError('Given variable {} not in factor'.format(var))
+            raise KeyError('Given variable {} not in factor'.format(var))
 
         newVars = [v for v in self.vars if v != var]
         # Use a dictionary to collect like items (without given var)
@@ -108,7 +108,9 @@ class Factor():
 
     def normalize(self):
         """ Normalize probabilities. """
-        pass
+        s = sum(p for _, p in self.probabilities)
+        newProbs = ((vals, p / s) for vals, p in self.probabilities)
+        return Factor(self.vars, newProbs)
 
 
 def multiply(f1, f2):
@@ -127,14 +129,38 @@ def normalize(factor):
     return factor.normalize()
 
 
-def inference(factorList, queryVars, hiddenVars, evidence):
+def inference(factors, queryVars, hiddenVars, evidence):
     """ Compute P(queryVars | evidence) by variable elimination.  This first
     restricts the factors according to the evidence, then sums out the hidden
     variables, in order.
     Finally, the result is normalized to return a probability over a
     distribution that sums to 1.
+        factors: List of Factors to operate on
+        queryVars: List of variables to query for
+        hiddenVars: List of variables to sum out
+        evidence: List of tuples of the form (variable, value)
     """
-    pass
+    # Use evidence to restrict all variables
+    for var, val in evidence:
+        for i, f in enumerate(factors):
+            try:
+                factors[i] = f.restrict(var, val)
+            except KeyError:
+                # Variable not present
+                pass
+
+    # Sumout
+    for var in hiddenVars:
+        for i, f in enumerate(factors):
+            try:
+                factors[i] = f.sumout(var)
+            except KeyError:
+                # Variable not present
+                pass
+    # TODO
+    print('Done inference')
+    for f in factors:
+        print(f)
 
 
 if __name__ == '__main__':
@@ -151,16 +177,14 @@ if __name__ == '__main__':
     #print(ab * bc)
     #
     #
-    #a = Factor('a', (((True,), 0.4), ((False,), 0.6)))
-    #print('a\n{}'.format(a))
-    #b = Factor('b', (((True,), 0.2), ((False,), 0.8)))
-    #print('b\n{}'.format(b))
-    #print('-'*30)
-    #print('a * b')
-    #print(a * b)
-    #print('-'*30)
+    a = Factor('a', (((True,), 0.4), ((False,), 0.6)))
+    print('a\n{}'.format(a))
+    print('a sumout a\n{}'.format(a.sumout('a')))
+    print('a restrict False\n{}'.format(a.restrict('a', False)))
+    print('a restrict False norm\n{}'.format(a.restrict('a', False).normalize()))
     print('ab\n{}\n{}'.format('-'*20,ab))
     print('-'*20)
     print('ab.sumout(a)')
     print('-'*20)
     print(ab.sumout('a'))
+    print('ab.sumout(a) norm\n{}'.format(ab.sumout('a').normalize()))
