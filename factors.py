@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 class Factor():
     def __init__(self, vars, probabilities):
         """ Initialize a Factor with some set of variables and their
@@ -24,6 +26,7 @@ class Factor():
             lines.append('{} {}'.format(varString.ljust(leftWidth), probStr))
         return '\n'.join(lines)
 
+
     def _getVals(self, vars, tpl):
         ret = []
         vars = set(vars)
@@ -31,6 +34,7 @@ class Factor():
             if v in vars:
                 ret.append(tpl[i])
         return tuple(ret)
+
 
     def __mul__(self, other):
         """ Multiply two factors. """
@@ -87,9 +91,19 @@ class Factor():
         return Factor(newVars, newProbs)
 
 
-    def sumout(self, variable):
+    def sumout(self, var):
         """ Sum out a given variable. """
-        pass
+        if var not in self.vars:
+            raise ValueError('Given variable {} not in factor'.format(var))
+
+        newVars = [v for v in self.vars if v != var]
+        # Use a dictionary to collect like items (without given var)
+        newProbs = defaultdict(int)
+        for vals, prob in self.probabilities:
+            newProbs[self._getVals(newVars, vals)] += prob
+
+        newProbs = tuple(i for i in newProbs.items())
+        return Factor(newVars, newProbs)
 
 
     def normalize(self):
@@ -123,20 +137,30 @@ def inference(factorList, queryVars, hiddenVars, evidence):
     pass
 
 
-ab = Factor('ab',
-            (((True, True), 0.9),
-             ((True, False), 0.1),
-             ((False, True), 0.4),
-             ((False, False), 0.6)))
-bc = Factor('bc',
-            (((True, True), 0.7),
-             ((True, False), 0.3),
-             ((False, True), 0.8),
-             ((False, False), 0.2)))
-print(ab * bc)
-
-
-a = Factor('a', (((True,), 0.4), ((False,), 0.6)))
-b = Factor('b', (((True,), 0.2), ((False,), 0.8)))
-print('-'*30)
-print(a * b)
+if __name__ == '__main__':
+    ab = Factor('ab',
+                (((True, True), 0.9),
+                 ((True, False), 0.1),
+                 ((False, True), 0.4),
+                 ((False, False), 0.6)))
+    #bc = Factor('bc',
+    #            (((True, True), 0.7),
+    #             ((True, False), 0.3),
+    #             ((False, True), 0.8),
+    #             ((False, False), 0.2)))
+    #print(ab * bc)
+    #
+    #
+    #a = Factor('a', (((True,), 0.4), ((False,), 0.6)))
+    #print('a\n{}'.format(a))
+    #b = Factor('b', (((True,), 0.2), ((False,), 0.8)))
+    #print('b\n{}'.format(b))
+    #print('-'*30)
+    #print('a * b')
+    #print(a * b)
+    #print('-'*30)
+    print('ab\n{}\n{}'.format('-'*20,ab))
+    print('-'*20)
+    print('ab.sumout(a)')
+    print('-'*20)
+    print(ab.sumout('a'))
