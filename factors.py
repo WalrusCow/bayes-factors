@@ -1,4 +1,6 @@
+import operator
 from collections import defaultdict
+from functools import reduce
 
 class Factor():
     def __init__(self, vars, probabilities):
@@ -129,14 +131,13 @@ def normalize(factor):
     return factor.normalize()
 
 
-def inference(factors, queryVars, hiddenVars, evidence):
+def inference(factors, hiddenVars, evidence):
     """ Compute P(queryVars | evidence) by variable elimination.  This first
     restricts the factors according to the evidence, then sums out the hidden
     variables, in order.
     Finally, the result is normalized to return a probability over a
     distribution that sums to 1.
         factors: List of Factors to operate on
-        queryVars: List of variables to query for
         hiddenVars: List of variables to sum out
         evidence: List of tuples of the form (variable, value)
     """
@@ -146,45 +147,33 @@ def inference(factors, queryVars, hiddenVars, evidence):
             try:
                 factors[i] = f.restrict(var, val)
             except KeyError:
-                # Variable not present
+                # Variable not present - that's ok
                 pass
 
-    # Sumout
+    # Sumout all hidden variables
     for var in hiddenVars:
-        for i, f in enumerate(factors):
-            try:
-                factors[i] = f.sumout(var)
-            except KeyError:
-                # Variable not present
-                pass
-    # TODO
-    print('Done inference')
-    for f in factors:
-        print(f)
+        # So we want to collect all factors for this variable, and multiply
+        # them together, then sum them out
+        factor = reduce(operator.mul, filter(lambda f: var in f.vars, factors))
+        factor = factor.sumout(var)
+        factors = list(filter(lambda f: var not in f.vars, factors))
+        factors.append(factor)
 
+    # We may have a few that are distinct, so multiply together at the end
+    return reduce(operator.mul, factors).normalize()
 
 if __name__ == '__main__':
-    ab = Factor('ab',
-                (((True, True), 0.9),
-                 ((True, False), 0.1),
-                 ((False, True), 0.4),
-                 ((False, False), 0.6)))
-    #bc = Factor('bc',
-    #            (((True, True), 0.7),
-    #             ((True, False), 0.3),
-    #             ((False, True), 0.8),
-    #             ((False, False), 0.2)))
-    #print(ab * bc)
-    #
-    #
-    a = Factor('a', (((True,), 0.4), ((False,), 0.6)))
-    print('a\n{}'.format(a))
-    print('a sumout a\n{}'.format(a.sumout('a')))
-    print('a restrict False\n{}'.format(a.restrict('a', False)))
-    print('a restrict False norm\n{}'.format(a.restrict('a', False).normalize()))
-    print('ab\n{}\n{}'.format('-'*20,ab))
-    print('-'*20)
-    print('ab.sumout(a)')
-    print('-'*20)
-    print(ab.sumout('a'))
-    print('ab.sumout(a) norm\n{}'.format(ab.sumout('a').normalize()))
+    f1 = Factor('a', (((True,), 0.9), ((False,), 0.1)))
+    f2 = Factor('ab',
+            (((True, True), 0.9),
+             ((True, False), 0.1),
+             ((False, True), 0.4),
+             ((False, False), 0.6)))
+    f3 = Factor('bc',
+            (((True, True), 0.7),
+             ((True, False), 0.3),
+             ((False, True), 0.2),
+             ((False, False), 0.8)))
+    print(inference([f1, f2, f3], 'ab', []))
+    # b: .85; ~b: .15
+    # c: .625; ~c: .375
