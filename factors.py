@@ -24,10 +24,46 @@ class Factor():
             lines.append('{} {}'.format(varString.ljust(leftWidth), probStr))
         return '\n'.join(lines)
 
+    def _getVals(self, vars, tpl):
+        ret = []
+        vars = set(vars)
+        for i, v in enumerate(self.vars):
+            if v in vars:
+                ret.append(tpl[i])
+        return tuple(ret)
 
     def __mul__(self, other):
         """ Multiply two factors. """
-        pass
+        # All the common variables (as strings) (in order)
+        s1 = set(self.vars)
+        s2 = set(other.vars)
+        commonVars = list(s1 & s2)
+        sVars = list(s1 - s2)
+        oVars = list(s2 - s1)
+
+        def makeCommonIndexes(factor, commonVars):
+            return [factor.vars.index(v) for v in commonVars]
+
+        # Indexes in same order as "commonVars" mapping to indexes in factor
+        commonIndexes1 = makeCommonIndexes(self, commonVars)
+        commonIndexes2 = makeCommonIndexes(other, commonVars)
+
+        newProbs = []
+        for sVals, sProb in self.probabilities:
+            # Common values
+            sCommonVals = self._getVals(commonVars, sVals)
+            for oVals, oProb in other.probabilities:
+                oCommonVals = other._getVals(commonVars, oVals)
+                if sCommonVals == oCommonVals:
+                    # Has all common values the same: New entry
+                    sVals = self._getVals(sVars, sVals)
+                    oVals = other._getVals(oVars, oVals)
+                    # We will put our unique values, then the common ones, then
+                    # the ones unique to the other factor
+                    newVals = sVals + sCommonVals + oVals
+                    newProbs.append((newVals, sProb * oProb))
+
+        return Factor(sVars + commonVars + oVars, newProbs)
 
 
     def restrict(self, variable, value):
@@ -87,14 +123,20 @@ def inference(factorList, queryVars, hiddenVars, evidence):
     pass
 
 
-a = Factor(['a', 'b'],
-           [((True, False), 0.1),
-            ((True, True), 0.9),
-            ((False, False), 0.4),
-            ((False, True), 0.6)])
+ab = Factor('ab',
+            (((True, True), 0.9),
+             ((True, False), 0.1),
+             ((False, True), 0.4),
+             ((False, False), 0.6)))
+bc = Factor('bc',
+            (((True, True), 0.7),
+             ((True, False), 0.3),
+             ((False, True), 0.8),
+             ((False, False), 0.2)))
+print(ab * bc)
 
-print(a)
-print(a.restrict('a', True))
-print(a.restrict('a', False))
-print(a.restrict('b', False))
-print(a.restrict('b', True))
+
+a = Factor('a', (((True,), 0.4), ((False,), 0.6)))
+b = Factor('b', (((True,), 0.2), ((False,), 0.8)))
+print('-'*30)
+print(a * b)
