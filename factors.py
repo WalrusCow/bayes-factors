@@ -32,7 +32,7 @@ class Factor():
         newVars = tuple(v for v in self.vars if v != variable)
         newProbs = []
 
-        for vals, prob in probabilities:
+        for vals, prob in self.probabilities:
             # Keep only entries with the correct value for the variable
             if vals[index] != value: continue
             # Remove the value at the index of our variable to restrict
@@ -75,4 +75,9 @@ a = Factor(['a', 'b'],
             ((True, True), 0.9),
             ((False, False), 0.5),
             ((False, True), 0.5)])
+
 print(a)
+print(a.restrict('a', True))
+print(a.restrict('a', False))
+print(a.restrict('b', False))
+print(a.restrict('b', True))
