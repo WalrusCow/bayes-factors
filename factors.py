@@ -41,18 +41,9 @@ class Factor():
     def __mul__(self, other):
         """ Multiply two factors. """
         # All the common variables (as strings) (in order)
-        s1 = set(self.vars)
-        s2 = set(other.vars)
-        commonVars = list(s1 & s2)
-        sVars = list(s1 - s2)
-        oVars = list(s2 - s1)
-
-        def makeCommonIndexes(factor, commonVars):
-            return [factor.vars.index(v) for v in commonVars]
-
-        # Indexes in same order as "commonVars" mapping to indexes in factor
-        commonIndexes1 = makeCommonIndexes(self, commonVars)
-        commonIndexes2 = makeCommonIndexes(other, commonVars)
+        commonVars = [v for v in self.vars if v in other.vars]
+        sVars = [v for v in self.vars if v not in other.vars]
+        oVars = [v for v in other.vars if v not in self.vars]
 
         newProbs = []
         for sVals, sProb in self.probabilities:
@@ -62,11 +53,11 @@ class Factor():
                 oCommonVals = other._getVals(commonVars, oVals)
                 if sCommonVals == oCommonVals:
                     # Has all common values the same: New entry
-                    sVals = self._getVals(sVars, sVals)
-                    oVals = other._getVals(oVars, oVals)
+                    sUnique = self._getVals(sVars, sVals)
+                    oUnique = other._getVals(oVars, oVals)
                     # We will put our unique values, then the common ones, then
                     # the ones unique to the other factor
-                    newVals = sVals + sCommonVals + oVals
+                    newVals = sUnique + sCommonVals + oUnique
                     newProbs.append((newVals, sProb * oProb))
 
         return Factor(sVars + commonVars + oVars, newProbs)
