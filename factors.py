@@ -3,9 +3,12 @@ from collections import defaultdict
 from functools import reduce
 
 class Factor():
+    count = 1
     def __init__(self, vars, probabilities):
         """ Initialize a Factor with some set of variables and their
         corresponding probabilities. """
+        self.name = str(Factor.count)
+        Factor.count += 1
         self.vars = tuple(vars)
         self.probabilities = tuple(probabilities)
 
@@ -27,6 +30,10 @@ class Factor():
             probStr = '{:3g}'.format(prob).ljust(rightWidth)
             lines.append('{} {}'.format(varString.ljust(leftWidth), probStr))
         return '\n'.join(lines)
+
+
+    def getName(self):
+        return 'f{}({})'.format(self.name, ', '.join(self.vars))
 
 
     def _getVals(self, vars, tpl):
@@ -122,7 +129,7 @@ def normalize(factor):
     return factor.normalize()
 
 
-def inference(factors, hiddenVars, evidence):
+def inference(factors, hiddenVars, evidence=tuple()):
     """ Compute P(queryVars | evidence) by variable elimination.  This first
     restricts the factors according to the evidence, then sums out the hidden
     variables, in order.
@@ -132,21 +139,42 @@ def inference(factors, hiddenVars, evidence):
         hiddenVars: List of variables to sum out
         evidence: List of tuples of the form (variable, value)
     """
+    print('Initial factors: {}'.format(', '.join(f.getName() for f in factors)))
+    if len(evidence):
+        evidenceStr = ', '.join('{}={}'.format(k, v) for k, v in evidence)
+        print('Evidence: {}'.format(evidenceStr))
+    else:
+        print('No evidence')
+
+    RESTRICT_STR = 'New factor {new} by restricting {old} with {var}={val}'
     # Use evidence to restrict all variables
     for var, val in evidence:
         for i, f in enumerate(factors):
             try:
                 factors[i] = f.restrict(var, val)
+                print(RESTRICT_STR.format(**{
+                    'old': f.getName(),
+                    'new': factors[i].getName(),
+                    'var': var,
+                    'val': val
+                }))
             except KeyError:
                 # Variable not present - that's ok
                 pass
 
+    SUMOUT_STR = 'New factor {new} by summing out {old} over {var}'
     # Sumout all hidden variables
     for var in hiddenVars:
         # So we want to collect all factors for this variable, and multiply
         # them together, then sum them out
-        factor = reduce(operator.mul, filter(lambda f: var in f.vars, factors))
+        sumoutFactors = list(filter(lambda f: var in f.vars, factors))
+        factor = reduce(operator.mul, sumoutFactors)
         factor = factor.sumout(var)
+        print(SUMOUT_STR.format(**{
+            'old': ', '.join(f.getName() for f in sumoutFactors),
+            'new': factor.getName(),
+            'var': var
+        }))
         factors = list(filter(lambda f: var not in f.vars, factors))
         factors.append(factor)
 
