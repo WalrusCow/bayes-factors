@@ -1,0 +1,34 @@
+The factors we can influence are: Foreign purchase and computer related purchase.
+
+That is, we could make the internet purchase a foreign purchase, and we could
+make a computer related purchase prior to the internet purchase.
+
+The best idea is to make a computer-related purchase first.  Making it a
+foreign purchase would obviously increase the chance of fraud. Making a
+computer-related first decreases the chance of our later purchase being found
+fraudulent from 0.00848 to 0.00733.
+
+See the work below:
+
+Initial factors: f1(Trav), f3(Fraud, Trav), f2(OC), f4(CRP, OC), f5(FP, Trav, Fraud), f6(IP, OC, Fraud)
+Evidence: IP=True, FP=False, CRP=True
+New factor f7(OC, Fraud) by restricting f6(IP, OC, Fraud) with IP=True
+New factor f8(Trav, Fraud) by restricting f5(FP, Trav, Fraud) with FP=False
+New factor f9(OC) by restricting f4(CRP, OC) with CRP=True
+New factor f12(Fraud) by summing out f1(Trav), f3(Fraud, Trav), f8(Trav, Fraud) over Trav
+New factor f15(Fraud) by summing out f2(OC), f9(OC), f7(OC, Fraud) over OC
+~Fraud 0.992673
+Fraud  0.00732672
+
+Initial factors: f1(Trav), f3(Fraud, Trav), f2(OC), f4(CRP, OC), f5(FP, Trav, Fraud), f6(IP, OC, Fraud)
+Evidence: IP=True, FP=False, CRP=False
+New factor f18(OC, Fraud) by restricting f6(IP, OC, Fraud) with IP=True
+New factor f19(Trav, Fraud) by restricting f5(FP, Trav, Fraud) with FP=False
+New factor f20(OC) by restricting f4(CRP, OC) with CRP=False
+New factor f23(Fraud) by summing out f1(Trav), f3(Fraud, Trav), f19(Trav, Fraud) over Trav
+New factor f26(Fraud) by summing out f2(OC), f20(OC), f18(OC, Fraud) over OC
+~Fraud 0.99152 
+Fraud  0.00848049
+
+Min prob: 0.00848049
+Min evidence: [('IP', True), ('FP', False), ('CRP', True)]
